@@ -1,12 +1,21 @@
 import { ErrorType } from '../types/Error';
 
+let timerID: ReturnType<typeof setTimeout> | undefined = undefined;
+
 export function handleError(
   callback: (value: ErrorType | null) => void,
-  errorType: ErrorType,
+  errorType: ErrorType | null,
 ) {
-  callback(errorType);
+  if (errorType !== null) {
+    clearTimeout(timerID);
+    timerID = undefined;
+  }
 
-  return setTimeout(() => {
-    callback(null);
-  }, 3000);
+  if (errorType !== null) {
+    timerID = setTimeout(() => {
+      callback(null);
+    }, 3000);
+  }
+
+  callback(errorType);
 }

@@ -19,7 +19,8 @@ export const App: React.FC = () => {
   const [all, setAll] = useState(true);
   const [active, setActive] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const mainInputIsFocused = useRef<HTMLInputElement | null>(null);
+
+  const inputField = useRef<HTMLInputElement | null>(null);
 
   const loadTodos = async () => {
     try {
@@ -55,13 +56,13 @@ export const App: React.FC = () => {
     setTitle(event.target.value);
   };
 
-  const reset = () => {
-    setErrorType(null);
+  const onSuccessfulRequest = () => {
     setTitle('');
-    mainInputIsFocused.current?.focus();
+    setActiveTodo([]);
   };
 
   const addTodos = (event: React.FormEvent<HTMLFormElement>) => {
+    handleError(setErrorType, null);
     event.preventDefault();
 
     if (title.trim().length === 0) {
@@ -86,20 +87,20 @@ export const App: React.FC = () => {
     request
       .then((createdTodo: Todo) => {
         setTodosList(prev => [...prev, createdTodo]);
-        reset();
+        onSuccessfulRequest();
       })
       .catch((error: Error) => {
         handleError(setErrorType, 'add');
+        setActiveTodo([]);
         throw error;
       })
       .finally(() => {
         setTempTodo(null);
-        setActiveTodo([]);
-        reset();
       });
   };
 
   const deleteTodo = (todoId: number) => {
+    handleError(setErrorType, null);
     todosServices
       .deleteTodos(todoId)
       .then(() => {
@@ -112,7 +113,8 @@ export const App: React.FC = () => {
       .catch((error: Error) => {
         handleError(setErrorType, 'delete');
         throw error;
-      });
+      })
+      .finally(() => setActiveTodo([]));
   };
 
   const completeTodo = (
@@ -200,8 +202,13 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     loadTodos();
-    mainInputIsFocused.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (inputField.current) {
+      inputField.current.focus();
+    }
+  }, [todos, activeTodo]);
 
   if (!todosServices.USER_ID) {
     return <UserWarning />;
@@ -228,7 +235,7 @@ export const App: React.FC = () => {
           {/* Add a todo on form submit */}
           <form onSubmit={addTodos}>
             <input
-              ref={mainInputIsFocused}
+              ref={inputField}
               disabled={activeTodo.length > 0}
               data-cy="NewTodoField"
               type="text"
