@@ -99,22 +99,22 @@ export const App: React.FC = () => {
       });
   };
 
-  const deleteTodo = (todoId: number) => {
+  const deleteTodo = async (todoId: number) => {
     handleError(setErrorType, null);
-    todosServices
-      .deleteTodos(todoId)
-      .then(() => {
-        setTodosList(currentTodos => {
-          return currentTodos.filter(
-            (currentTodo: Todo) => currentTodo.id !== todoId,
-          );
-        });
-      })
-      .catch((error: Error) => {
-        handleError(setErrorType, 'delete');
-        throw error;
-      })
-      .finally(() => setActiveTodo([]));
+    try {
+      await todosServices.deleteTodos(todoId);
+
+      return setTodosList(currentTodos => {
+        return currentTodos.filter(
+          (currentTodo: Todo) => currentTodo.id !== todoId,
+        );
+      });
+    } catch (error) {
+      handleError(setErrorType, 'delete');
+      throw error;
+    } finally {
+      setActiveTodo([]);
+    }
   };
 
   const completeTodo = (
@@ -152,7 +152,7 @@ export const App: React.FC = () => {
       });
   };
 
-  const completeAllTodos = () => {
+  const completeAllTodos = async () => {
     const completedAll: boolean = [...todosList].every((current: Todo) => {
       return current.completed;
     });
@@ -161,20 +161,32 @@ export const App: React.FC = () => {
       ? [...todosList]
       : [...todosList].filter(current => !current.completed);
 
-    for (const todosValue of todosList) {
-      completeTodo(todosValue, currentTodos, !completedAll);
+    const promiseArray = currentTodos.map((todo: Todo) =>
+      completeTodo(todo, currentTodos, !completedAll),
+    );
+
+    try {
+      await Promise.all([...promiseArray]);
+    } catch (error) {
+      handleError(setErrorType, 'update');
+      throw error;
     }
   };
 
-  const clearCompleted = () => {
+  const clearCompleted = async () => {
     const completedTodos = [...todosList].filter(current => current.completed);
+
+    const promiseArray = completedTodos.map((todo: Todo) =>
+      deleteTodo(todo.id),
+    );
 
     setActiveTodo([...completedTodos]);
 
-    for (const current of todosList) {
-      if (current.completed) {
-        deleteTodo(current.id);
-      }
+    try {
+      await Promise.all([...promiseArray]);
+    } catch (error) {
+      handleError(setErrorType, 'delete');
+      throw error;
     }
   };
 
