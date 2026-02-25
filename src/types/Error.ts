@@ -1,1 +1,6 @@
-export type ErrorType = 'loading' | 'empty' | 'add' | 'delete' | 'update';
+type Error = 'loading' | 'empty' | 'add' | 'delete' | 'update';
+
+export interface ErrorType {
+  type: Error;
+  time: number;
+}
